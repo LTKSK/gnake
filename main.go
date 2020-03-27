@@ -11,8 +11,10 @@ func inputLoop(ch chan string) {
 	for s.Scan() {
 		ch <- s.Text()
 	}
-
 }
+
+func renderLoop()     {}
+func clearCheckLoop() {}
 
 func main() {
 	userInput := make(chan string)
@@ -21,5 +23,7 @@ func main() {
 	for {
 		fmt.Println(<-userInput)
 		// TODO: mainloop
+		// TODO: renderloop
+		// TODO: clear check
 	}
 }
