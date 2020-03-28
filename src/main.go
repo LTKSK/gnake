@@ -68,16 +68,16 @@ func takeInput(i chan<- direction) {
 	}
 }
 
-func (p *Player) addTale(x, y int) {
+func (p *Player) addTale() {
 	if p.Tail == nil {
-		p.Tail = &Tail{PosX: x, PosY: y}
+		p.Tail = &Tail{}
 		return
 	}
 	var tail *Tail
 	tail = p.Tail
 	for {
 		if tail.Tail == nil {
-			tail.Tail = &Tail{PosX: x, PosY: y}
+			tail.Tail = &Tail{}
 			break
 		}
 		tail = tail.Tail
@@ -88,18 +88,6 @@ func update(p *Player, items []Item) {
 	var prevX, prevY, tx, ty int
 	prevX = p.PosX
 	prevY = p.PosY
-	tail := p.Tail
-	for {
-		if tail == nil {
-			break
-		}
-		tx, ty = tail.PosX, tail.PosY
-		tail.PosX = prevX
-		tail.PosY = prevY
-		prevX, prevY = tx, ty
-		tail = tail.Tail
-	}
-
 	switch p.Dir {
 	// 座標が左上原点なので、上下の操作がひっくり返る
 	case UP:
@@ -111,24 +99,41 @@ func update(p *Player, items []Item) {
 	case LEFT:
 		p.PosX--
 	}
-
 	for index, item := range items {
 		// itemとあたったら取得して、tailを伸ばす
 		if item.PosX == p.PosX && item.PosY == p.PosY {
 			items = append(items[:index], items[index+1:]...)
-			// 向きによって置き場を変える
-			switch p.Dir {
-			case UP:
-				p.addTale(item.PosX, item.PosY-1)
-			case DOWN:
-				p.addTale(item.PosX, item.PosY+1)
-			case RIGHT:
-				p.addTale(item.PosX-1, item.PosY)
-			case LEFT:
-				p.addTale(item.PosX+1, item.PosY)
-			}
+			p.addTale()
 			break
 		}
+	}
+
+	// tailのposition更新
+	tail := p.Tail
+	flag := false
+	for {
+		if tail == nil {
+			break
+		}
+		// ここでリタイアチェック
+		if p.PosX == tail.PosX && p.PosY == tail.PosY {
+			flag = true
+			break
+		}
+		tx, ty = tail.PosX, tail.PosY
+		tail.PosX = prevX
+		tail.PosY = prevY
+		prevX, prevY = tx, ty
+		tail = tail.Tail
+	}
+	if flag {
+		termbox.Clear(coldef, coldef)
+		for i, s := range "finish!!!" {
+			termbox.SetCell(20+i, 10, rune(s), coldef, coldef)
+		}
+		// todo time表示
+		termbox.Flush()
+		os.Exit(0)
 	}
 }
 
@@ -167,8 +172,8 @@ func main() {
 	}
 	defer termbox.Close()
 	p := Player{PosX: 25, PosY: 25, Dir: DOWN}
-	// w, h := termbox.Size()
 	w, h := 60, 40
+	// 適当にいっぱい生成
 	items := []Item{}
 	for i := 0; i < 100; i++ {
 		items = append(items, Item{PosX: rand.Intn(w - 1), PosY: rand.Intn(h - 1)})
@@ -180,6 +185,7 @@ func main() {
 	defer close(input)
 	go takeInput(input)
 
+	// 更新タイマー
 	ticker := time.NewTicker(100 * time.Millisecond)
 	for {
 		select {
