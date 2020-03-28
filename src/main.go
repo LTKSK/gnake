@@ -4,6 +4,8 @@ import (
 	"log"
 	"math/rand"
 	"os"
+	"strconv"
+	"sync"
 	"time"
 
 	"github.com/nsf/termbox-go"
@@ -40,7 +42,9 @@ const coldef = termbox.ColorDefault
 
 func clearCheckLoop() {}
 
-func initGame(w, h int, p *Player, items []Item) {
+var w, h = 60, 40
+
+func initGame(p *Player, items []Item) {
 	termbox.HideCursor()
 	render(w, h, p, items)
 }
@@ -120,6 +124,12 @@ func update(p *Player, items []Item) {
 			flag = true
 			break
 		}
+		// こっちは壁床天井の判定
+		if p.PosX == 0 || p.PosX == w || p.PosY == 0 || p.PosY == h {
+			flag = true
+			break
+		}
+		// 一つずつ座標をずらす
 		tx, ty = tail.PosX, tail.PosY
 		tail.PosX = prevX
 		tail.PosY = prevY
@@ -127,8 +137,14 @@ func update(p *Player, items []Item) {
 		tail = tail.Tail
 	}
 	if flag {
+		var count int
+		tail := p.Tail
+		for tail != nil {
+			count++
+			tail = tail.Tail
+		}
 		termbox.Clear(coldef, coldef)
-		for i, s := range "finish!!!" {
+		for i, s := range "finish!!! result: " + strconv.Itoa(count) {
 			termbox.SetCell(20+i, 10, rune(s), coldef, coldef)
 		}
 		// todo time表示
@@ -144,8 +160,9 @@ func render(width, height int, p *Player, items []Item) {
 		termbox.SetCell(0, y, rune('|'), coldef, coldef)
 		termbox.SetCell(width, y, rune('|'), coldef, coldef)
 	}
-	// 床描画
+	// 床と天井描画
 	for x := 0; x < width+1; x++ {
+		termbox.SetCell(x, 0, rune('-'), coldef, coldef)
 		termbox.SetCell(x, height, rune('-'), coldef, coldef)
 	}
 	// userpotision反映
@@ -172,13 +189,12 @@ func main() {
 	}
 	defer termbox.Close()
 	p := Player{PosX: 25, PosY: 25, Dir: DOWN}
-	w, h := 60, 40
-	// 適当にいっぱい生成
+	//  適当にいっぱい生成
 	items := []Item{}
 	for i := 0; i < 100; i++ {
-		items = append(items, Item{PosX: rand.Intn(w - 1), PosY: rand.Intn(h - 1)})
+		items = append(items, Item{PosX: rand.Intn(w-1) + 1, PosY: rand.Intn(h-1) + 1})
 	}
-	initGame(w, h, &p, items)
+	initGame(&p, items)
 
 	// ユーザ入力取得用のgorutine
 	input := make(chan direction)
@@ -187,15 +203,20 @@ func main() {
 
 	// 更新タイマー
 	ticker := time.NewTicker(100 * time.Millisecond)
+	var mu sync.Mutex
 	for {
 		select {
 		// key イベント
 		case d := <-input:
+			mu.Lock()
 			p.Dir = d
+			mu.Unlock()
 		// タイマーイベント
 		case <-ticker.C:
+			mu.Lock()
 			update(&p, items)
 			render(w, h, &p, items)
+			mu.Unlock()
 		}
 	}
 }
