@@ -40,8 +40,6 @@ type Player struct {
 
 const coldef = termbox.ColorDefault
 
-func clearCheckLoop() {}
-
 var w, h = 60, 40
 
 func initGame(p *Player, items []Item) {
