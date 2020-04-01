@@ -40,6 +40,7 @@ type Player struct {
 
 const coldef = termbox.ColorDefault
 
+// 画面のサイズ
 var w, h = 60, 40
 
 func initGame(p *Player, items []Item) {
@@ -71,6 +72,7 @@ func takeInput(i chan<- direction) {
 }
 
 func (p *Player) addTale() {
+	// 末尾までtaleを辿って、ケツに要素を追加する
 	if p.Tail == nil {
 		p.Tail = &Tail{}
 		return
@@ -192,8 +194,8 @@ func main() {
 	for i := 0; i < 100; i++ {
 		items = append(items, Item{PosX: rand.Intn(w-1) + 1, PosY: rand.Intn(h-1) + 1})
 	}
-	initGame(&p, items)
 
+	initGame(&p, items)
 	// ユーザ入力取得用のgorutine
 	input := make(chan direction)
 	defer close(input)
