@@ -114,19 +114,19 @@ func update(p *Player, items []Item) {
 
 	// tailのposition更新
 	tail := p.Tail
-	flag := false
+	isClear := false
 	for {
 		if tail == nil {
 			break
 		}
-		// ここでリタイアチェック
+		// ここでクリアチェック
 		if p.PosX == tail.PosX && p.PosY == tail.PosY {
-			flag = true
+			isClear = true
 			break
 		}
 		// こっちは壁床天井の判定
 		if p.PosX == 0 || p.PosX == w || p.PosY == 0 || p.PosY == h {
-			flag = true
+			isClear = true
 			break
 		}
 		// 一つずつ座標をずらす
@@ -136,7 +136,7 @@ func update(p *Player, items []Item) {
 		prevX, prevY = tx, ty
 		tail = tail.Tail
 	}
-	if flag {
+	if isClear {
 		var count int
 		tail := p.Tail
 		for tail != nil {
@@ -165,13 +165,11 @@ func render(width, height int, p *Player, items []Item) {
 		termbox.SetCell(x, 0, rune('-'), coldef, coldef)
 		termbox.SetCell(x, height, rune('-'), coldef, coldef)
 	}
-	// userpotision反映
+	// playerのpotision反映
 	for _, item := range items {
 		termbox.SetCell(item.PosX, item.PosY, rune('X'), coldef, coldef)
 	}
 	termbox.SetCell(p.PosX, p.PosY, rune('O'), coldef, coldef)
-
-	// TODO: update tail
 	tail := p.Tail
 	for {
 		if tail == nil {
