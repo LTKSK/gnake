@@ -181,6 +181,18 @@ func render(width, height int, p *Player, items []Item) {
 	termbox.Flush()
 }
 
+func showTitle() {
+	input := make(chan direction)
+	defer close(input)
+	go takeInput(input)
+
+	termbox.Clear(coldef, coldef)
+	for i, s := range "finish!!! result: " + strconv.Itoa(count) {
+		termbox.SetCell(20+i, 10, rune(s), coldef, coldef)
+	}
+	termbox.Flush()
+}
+
 func main() {
 	if err := termbox.Init(); err != nil {
 		log.Fatal(err)
