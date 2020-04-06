@@ -65,6 +65,7 @@ func takeInput(i chan<- direction) {
 				i <- LEFT
 			}
 			if event.Key == termbox.KeyEsc {
+				termbox.Clear(coldef, coldef)
 				os.Exit(0)
 			}
 		}
@@ -181,16 +182,35 @@ func render(width, height int, p *Player, items []Item) {
 	termbox.Flush()
 }
 
+func renderTitle(title string, height int) {
+	for i, c := range title {
+		termbox.SetCell(20+i, height, rune(c), coldef, coldef)
+	}
+}
+
 func showTitle() {
 	input := make(chan direction)
 	defer close(input)
 	go takeInput(input)
 
 	termbox.Clear(coldef, coldef)
-	for i, s := range "finish!!! result: " + strconv.Itoa(count) {
-		termbox.SetCell(20+i, 10, rune(s), coldef, coldef)
-	}
+	renderTitle(">start", 10)
+	renderTitle(" exit", 12)
 	termbox.Flush()
+	for {
+		switch d := <-input; d {
+		// key イベント
+		case UP:
+			renderTitle(">start", 10)
+			renderTitle(" exit", 12)
+			termbox.Flush()
+		case DOWN:
+			termbox.Clear(coldef, coldef)
+			renderTitle(" start", 10)
+			renderTitle(">exit", 12)
+			termbox.Flush()
+		}
+	}
 }
 
 func main() {
@@ -198,6 +218,9 @@ func main() {
 		log.Fatal(err)
 	}
 	defer termbox.Close()
+
+	// showTitle()
+
 	p := Player{PosX: 25, PosY: 25, Dir: DOWN}
 	//  適当にいっぱい生成
 	items := []Item{}
